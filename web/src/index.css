@@ -1,0 +1,60 @@
+@import "leaflet/dist/leaflet.css";
+@import "tailwindcss";
+
+@theme {
+  /* ── Red brand ── */
+  --color-brand-50:  #fff1f2;
+  --color-brand-100: #ffe4e6;
+  --color-brand-200: #fecdd3;
+  --color-brand-400: #f87171;
+  --color-brand-500: #ef4444;
+  --color-brand-600: #dc2626;
+  --color-brand-700: #b91c1c;
+  --color-brand-900: #7f1d1d;
+
+  /* ── Surfaces (white & near-white) ── */
+  --color-surface-50:  #ffffff;
+  --color-surface-100: #f9fafb;
+  --color-surface-200: #f3f4f6;
+  --color-surface-300: #e5e7eb;
+
+  /* ── Ink (black scale) ── */
+  --color-ink-900: #0a0a0a;
+  --color-ink-800: #111827;
+  --color-ink-600: #374151;
+  --color-ink-400: #6b7280;
+  --color-ink-300: #9ca3af;
+  --color-ink-200: #d1d5db;
+
+  /* ── Status ── */
+  --color-success-500: #16a34a;
+  --color-success-100: #dcfce7;
+  --color-warning-500: #d97706;
+  --color-warning-100: #fef3c7;
+  --color-danger-500:  #dc2626;
+  --color-danger-100:  #fee2e2;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-surface-100);
+    color: var(--color-ink-900);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--color-ink-900);
+  }
+}

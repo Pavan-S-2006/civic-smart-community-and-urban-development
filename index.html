@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicPulse ⚡ AI Civic Reporting & Community Platform</title>
+  <meta name="description" content="Report local civic issues, track resolution in real-time, upvote community reports, and verify claims with AI.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dark-theme">
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo">
+        <i class="fa-solid fa-bolt-lightning logo-icon"></i>
+        <span class="logo-text">Civic<span class="logo-highlight">Pulse</span></span>
+        <span class="live-tag"><span class="pulse-dot"></span> LIVE</span>
+      </div>
+      <button class="btn btn-community btn-sm" id="civicCommunityBtn" title="Civic Community - Regional Problems & Global Search">
+        <i class="fa-solid fa-users"></i> <span>Civic Community</span>
+      </button>
+    </div>
+
+    <div class="header-center">
+      <div class="gps-status-badge" id="gpsStatusBadge">
+        <i class="fa-solid fa-location-crosshairs spin-slow"></i>
+        <span id="gpsStatusText">Acquiring GPS...</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button class="btn btn-secondary btn-sm" id="seedDemoBtn" title="Load sample hackathon data">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Seed Demo Data
+      </button>
+
+      <div class="user-reputation-pill" id="userReputationPill" title="Your Civic Reputation Score">
+        <i class="fa-solid fa-star star-icon"></i>
+        <span id="userPoints">150</span> <span class="pts-label">PTS</span>
+        <span class="badge-tag" id="userBadgeLabel">Civic Hero</span>
+      </div>
+
+      <button class="btn btn-outline btn-sm" id="authBtn">
+        <i class="fa-solid fa-user-circle"></i> <span id="authBtnText">Sign In</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Stats Counter Bar -->
+  <section class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-icon red-glow"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="stat-info">
+        <span class="stat-value" id="statTotalReported">0</span>
+        <span class="stat-label">Issues Reported</span>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon green-glow"><i class="fa-solid fa-circle-check"></i></div>
+      <div class="stat-info">
+        <span class="stat-value" id="statResolvedRate">0%</span>
+        <span class="stat-label">Resolved Rate</span>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon purple-glow"><i class="fa-solid fa-brain"></i></div>
+      <div class="stat-info">
+        <span class="stat-value" id="statAvgAiScore">94%</span>
+        <span class="stat-label">AI Trust Score</span>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon blue-glow"><i class="fa-solid fa-users"></i></div>
+      <div class="stat-info">
+        <span class="stat-value" id="statActiveUsers">1.2k</span>
+        <span class="stat-label">Active Citizens</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Layout (Sidebar + Map) -->
+  <main class="app-main">
+
+    <!-- Left Controls & Issue Feed Sidebar -->
+    <aside class="sidebar">
+      
+      <!-- Search & Category Filters -->
+      <div class="filter-panel glass-card">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="searchInput" placeholder="Search by title, location, tag...">
+        </div>
+
+        <div class="filter-row">
+          <select id="categoryFilter" class="custom-select">
+            <option value="ALL">All Categories</option>
+            <option value="pothole">🛣️ Potholes & Roads</option>
+            <option value="sanitation">🗑️ Waste & Sanitation</option>
+            <option value="water">💧 Water Leakage</option>
+            <option value="power">💡 Streetlights & Power</option>
+            <option value="safety">🛡️ Public Safety</option>
+            <option value="traffic">🚦 Traffic & Signals</option>
+          </select>
+
+          <select id="statusFilter" class="custom-select">
+            <option value="ALL">All Statuses</option>
+            <option value="Reported">🔴 Reported</option>
+            <option value="In Progress">🟡 In Progress</option>
+            <option value="Resolved">🟢 Resolved</option>
+          </select>
+        </div>
+
+        <div class="proximity-filter">
+          <div class="range-header">
+            <span><i class="fa-solid fa-compass"></i> Radius Filter</span>
+            <span id="radiusValText" class="highlight-text">All Distance</span>
+          </div>
+          <input type="range" id="proximityRange" min="100" max="5000" step="100" value="5000">
+        </div>
+      </div>
+
+      <!-- Live Issues List Container -->
+      <div class="feed-header">
+        <h3><i class="fa-solid fa-list-check"></i> Live Issue Feed (<span id="issueCountText">0</span>)</h3>
+        <button class="btn-text" id="resetFiltersBtn">Reset</button>
+      </div>
+
+      <div class="issue-list" id="issueListContainer">
+        <!-- Dynamic Issue Cards appended by JS -->
+        <div class="empty-state">
+          <i class="fa-solid fa-map-location-dot empty-icon"></i>
+          <p>No issues found matching filters.</p>
+          <button class="btn btn-primary btn-sm" id="emptyRaiseBtn">Raise an Issue</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Map View Container -->
+    <section class="map-wrapper">
+      <div id="map"></div>
+
+      <!-- Floating Controls on Map -->
+      <div class="map-floating-controls">
+        <button class="map-btn" id="geoLocateBtn" title="Center on My GPS Location">
+          <i class="fa-solid fa-crosshairs"></i>
+        </button>
+        <button class="map-btn" id="recenterMapBtn" title="Reset View Bounds">
+          <i class="fa-solid fa-expand"></i>
+        </button>
+      </div>
+
+      <!-- Main Floating Action Button (FAB) -->
+      <button class="btn btn-gradient fab-raise" id="openRaiseIssueBtn">
+        <i class="fa-solid fa-plus-circle fa-lg"></i>
+        <span>Raise Civic Issue</span>
+      </button>
+
+      <!-- Click on map helper tip banner -->
+      <div class="map-tip-banner" id="mapTipBanner">
+        <i class="fa-solid fa-hand-pointer"></i> Click anywhere on the map to place an issue pin directly!
+        <button class="close-tip" id="closeTipBtn">&times;</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: Raise an Issue -->
+  <div class="modal-overlay" id="raiseIssueModal">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-bullhorn text-gradient"></i> Report a Civic Issue</h2>
+        <button class="modal-close" id="closeRaiseModalBtn">&times;</button>
+      </div>
+
+      <form id="raiseIssueForm" class="modal-body">
+        
+        <!-- Location Info -->
+        <div class="form-group location-picker-box">
+          <label><i class="fa-solid fa-location-dot"></i> Issue Location (Auto GPS / Selected on Map)</label>
+          <div class="location-input-group">
+            <input type="text" id="issueAddress" placeholder="Detecting location..." required readonly>
+            <button type="button" class="btn btn-secondary btn-sm" id="pickLocationOnMapBtn">
+              <i class="fa-solid fa-map-pin"></i> Pick Pin
+            </button>
+          </div>
+          <input type="hidden" id="issueLat">
+          <input type="hidden" id="issueLng">
+        </div>
+
+        <!-- Proximity Duplicate Detector Alert Banner -->
+        <div class="duplicate-alert hidden" id="duplicateAlertBox">
+          <i class="fa-solid fa-triangle-exclamation alert-icon"></i>
+          <div class="alert-content">
+            <strong id="duplicateTitle">Possible duplicate found nearby!</strong>
+            <p id="duplicateDesc">An issue "#102 Water Leakage" exists 45m away.</p>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline" id="viewDuplicateBtn">View Existing</button>
+        </div>
+
+        <!-- Title & Category -->
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label for="issueTitle">Issue Title</label>
+            <input type="text" id="issueTitle" placeholder="e.g., Deep Pothole near Main Street Crosswalk" required>
+          </div>
+          <div class="form-group flex-1">
+            <label for="issueCategory">Category</label>
+            <select id="issueCategory" class="custom-select" required>
+              <option value="pothole">🛣️ Pothole / Road</option>
+              <option value="sanitation">🗑️ Waste & Sanitation</option>
+              <option value="water">💧 Water Leakage</option>
+              <option value="power">💡 Streetlight & Power</option>
+              <option value="safety">🛡️ Public Safety</option>
+              <option value="traffic">🚦 Traffic & Signals</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Severity & Image Upload -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="issueSeverity">Severity Level</label>
+            <select id="issueSeverity" class="custom-select">
+              <option value="Low">🟢 Low (Minor nuisance)</option>
+              <option value="Medium" selected>🟡 Medium (Requires repair)</option>
+              <option value="High">🔴 High (Hazardous)</option>
+              <option value="Critical">⚡ Critical (Immediate Danger)</option>
+            </select>
+          </div>
+          <div class="form-group flex-1">
+            <label><i class="fa-solid fa-camera"></i> Attach Photo</label>
+            <div class="image-upload-wrapper" id="imageDropArea">
+              <input type="file" id="issueImageInput" accept="image/*" class="file-input-hidden">
+              <div class="upload-placeholder" id="uploadPlaceholder">
+                <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                <span>Click or Drag photo here</span>
+              </div>
+              <img id="imagePreview" class="image-preview hidden" alt="Uploaded Issue Preview">
+            </div>
+          </div>
+        </div>
+
+        <!-- Description & AI Smart Tag Button -->
+        <div class="form-group">
+          <div class="label-with-action">
+            <label for="issueDesc">Description</label>
+            <button type="button" class="btn-ai-sparkle" id="aiSmartTagBtn">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> AI Auto-Tag & Summary
+            </button>
+          </div>
+          <textarea id="issueDesc" rows="3" placeholder="Provide details (e.g. Depth of pothole, obstruction details, timeline)..." required></textarea>
+        </div>
+
+        <!-- AI Generated Tags Output -->
+        <div class="form-group hidden" id="aiTagsContainer">
+          <label><i class="fa-solid fa-tags"></i> AI Suggested Tags</label>
+          <div class="tags-list" id="aiTagsList"></div>
+        </div>
+
+        <!-- AI Fake-News & Reliability Check Preview Card -->
+        <div class="ai-reliability-card glass-card" id="aiReliabilityCard">
+          <div class="ai-header">
+            <div class="ai-badge-title">
+              <i class="fa-solid fa-robot text-purple"></i> Gemini AI Verification Engine
+            </div>
+            <div class="trust-score-pill" id="aiTrustPill">
+              <span id="aiTrustScoreVal">92%</span> Trust Rating
+            </div>
+          </div>
+          <p id="aiVerificationSummary" class="ai-summary">
+            Click "AI Auto-Tag & Summary" to analyze report authenticity, cross-reference nearby reports, and verify claim reliability.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelRaiseBtn">Cancel</button>
+          <button type="submit" class="btn btn-gradient" id="submitIssueBtn">
+            <i class="fa-solid fa-paper-plane"></i> Submit Issue (+50 PTS)
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL / DRAWER: Issue Detail View -->
+  <div class="modal-overlay" id="issueDetailModal">
+    <div class="modal-card glass-card modal-large">
+      <div class="modal-header">
+        <div class="detail-header-meta">
+          <span class="category-chip" id="detailCategoryChip">🛣️ Pothole</span>
+          <span class="severity-chip" id="detailSeverityChip">HIGH</span>
+          <span class="status-chip" id="detailStatusChip">Reported</span>
+        </div>
+        <button class="modal-close" id="closeDetailModalBtn">&times;</button>
+      </div>
+
+      <div class="detail-body">
+        <div class="detail-grid">
+          
+          <!-- Left Column: Media & Info -->
+          <div class="detail-main-col">
+            <h1 class="detail-title" id="detailTitle">Deep Pothole at 5th Avenue</h1>
+            
+            <div class="detail-meta-row">
+              <span><i class="fa-solid fa-user-pen"></i> Reported by <strong id="detailAuthor">John Citizen</strong></span>
+              <span><i class="fa-regular fa-clock"></i> <span id="detailTime">2 hours ago</span></span>
+              <span><i class="fa-solid fa-location-dot"></i> <span id="detailAddress">5th Ave & 23rd St</span></span>
+            </div>
+
+            <!-- Issue Photo Container -->
+            <div class="detail-image-box">
+              <img id="detailImage" src="" alt="Issue photo">
+            </div>
+
+            <!-- Issue Description -->
+            <div class="detail-section">
+              <h3>Description</h3>
+              <p id="detailDescription" class="desc-text"></p>
+              <div class="tags-list" id="detailTagsList"></div>
+            </div>
+
+            <!-- AI Claim Reliability Report -->
+            <div class="ai-claim-box glass-card">
+              <div class="ai-claim-header">
+                <h4><i class="fa-solid fa-shield-halved text-purple"></i> AI Claim Credibility Analysis</h4>
+                <div class="score-badge" id="detailAiScore">96% Reliable</div>
+              </div>
+              <p id="detailAiExplanation" class="ai-desc-text"></p>
+            </div>
+          </div>
+
+          <!-- Right Column: Status Lifecycle & Community Discussion -->
+          <div class="detail-side-col">
+            
+            <!-- Status Timeline Tracker -->
+            <div class="status-tracker-card glass-card">
+              <h3><i class="fa-solid fa-timeline"></i> Resolution Lifecycle</h3>
+              
+              <div class="status-stepper">
+                <div class="step-item active" id="stepReported">
+                  <div class="step-icon"><i class="fa-solid fa-flag"></i></div>
+                  <div class="step-label">Reported</div>
+                </div>
+                <div class="step-line" id="line1"></div>
+                <div class="step-item" id="stepInProgress">
+                  <div class="step-icon"><i class="fa-solid fa-wrench"></i></div>
+                  <div class="step-label">In Progress</div>
+                </div>
+                <div class="step-line" id="line2"></div>
+                <div class="step-item" id="stepResolved">
+                  <div class="step-icon"><i class="fa-solid fa-check"></i></div>
+                  <div class="step-label">Resolved</div>
+                </div>
+              </div>
+
+              <!-- Admin / Community Status Action Button -->
+              <div class="status-action-row">
+                <button class="btn btn-outline btn-sm w-full" id="updateStatusBtn">
+                  <i class="fa-solid fa-arrows-rotate"></i> Advance Status Step
+                </button>
+              </div>
+            </div>
+
+            <!-- Upvote & Action Bar -->
+            <div class="upvote-card glass-card">
+              <div class="upvote-info">
+                <button class="btn btn-upvote" id="detailUpvoteBtn">
+                  <i class="fa-solid fa-thumbs-up"></i> Upvote Issue
+                </button>
+                <div class="upvote-count-box">
+                  <span id="detailUpvoteCount" class="count-num">0</span>
+                  <span class="count-label">Upvotes</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="comments-card glass-card">
+              <h3><i class="fa-solid fa-comments"></i> Community Thread</h3>
+              
+              <div class="comments-list" id="detailCommentsList">
+                <!-- Comments dynamically loaded -->
+              </div>
+
+              <!-- Add Comment Input -->
+              <form id="addCommentForm" class="comment-input-form">
+                <input type="text" id="commentTextInput" placeholder="Add a update or note..." required>
+                <button type="submit" class="btn btn-primary btn-icon"><i class="fa-solid fa-paper-plane"></i></button>
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Auth & Profile -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal-card glass-card modal-sm">
+      <div class="modal-header">
+        <h2><i class="fa-solid fa-user-shield text-gradient"></i> Citizen Profile & Login</h2>
+        <button class="modal-close" id="closeAuthModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="profile-card glass-card">
+          <div class="avatar-box">
+            <i class="fa-solid fa-user-astronaut avatar-icon"></i>
+          </div>
+          <h3 id="profileName">Civic Contributor</h3>
+          <p id="profileEmail" class="text-muted">guest@civicpulse.org</p>
+          
+          <div class="points-badge-row">
+            <div class="p-stat">
+              <span class="p-num" id="modalPoints">150</span>
+              <span class="p-lbl">Points</span>
+            </div>
+            <div class="p-stat">
+              <span class="p-num" id="modalReportsCount">3</span>
+              <span class="p-lbl">Reports</span>
+            </div>
+            <div class="p-stat">
+              <span class="p-num" id="modalUpvotesCount">12</span>
+              <span class="p-lbl">Upvotes</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="badges-section">
+          <h4>Unlocked Civic Badges</h4>
+          <div class="badges-grid" id="profileBadgesGrid">
+            <div class="badge-item active" title="Reported 1st Issue">
+              <i class="fa-solid fa-eye text-yellow"></i>
+              <span>Eagle Eye</span>
+            </div>
+            <div class="badge-item active" title="Earned 100 Points">
+              <i class="fa-solid fa-award text-blue"></i>
+              <span>Civic Hero</span>
+            </div>
+            <div class="badge-item active" title="AI Verification Specialist">
+              <i class="fa-solid fa-shield-virus text-purple"></i>
+              <span>Master Verifier</span>
+            </div>
+            <div class="badge-item locked" title="10 Issues Resolved">
+              <i class="fa-solid fa-city text-muted"></i>
+              <span>Pillar of City</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary w-full" id="closeProfileBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Civic Community Hub Modal -->
+  <div class="modal-backdrop hidden" id="civicCommunityModal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div class="modal-title flex items-center gap-2">
+          <i class="fa-solid fa-users text-purple"></i>
+          <div>
+            <h3>Civic Community Hub</h3>
+            <p class="subtitle text-xs">Regional Problems Feed & Global Reports Search</p>
+          </div>
+        </div>
+        <button class="modal-close" id="closeCommunityModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="search-box-wrap mb-3">
+          <input type="text" id="communitySearchInput" class="form-control" placeholder="Search reports, issue files, categories, locations, reporters worldwide...">
+        </div>
+        <div class="region-pills-bar mb-3" id="regionPillsContainer">
+          <!-- Region pills rendered dynamically -->
+        </div>
+        <div id="communityFeedContainer" class="community-grid">
+          <!-- Dynamic problems feed -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <!-- Leaflet JS CDN -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nXCchQ9B584zc154q6x0TG2644weCH993848tzciTE=" crossorigin=""></script>
+
+  <!-- Application Modules -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
